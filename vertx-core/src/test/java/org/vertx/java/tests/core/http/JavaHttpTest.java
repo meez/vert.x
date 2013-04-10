@@ -517,6 +517,10 @@ public class JavaHttpTest extends TestBase {
     startTest(getMethodName());
   }
 
+  public void testPauseResume() {
+    startTest(getMethodName());
+  }
+
   @Test
   // Client trusts all server certs
   public void testTLSClientTrustAll() throws Exception {

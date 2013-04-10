@@ -2344,6 +2344,82 @@ public class HttpTestClient extends TestClientBase {
     }, handler);
   }
 
+  public void testPauseResume() throws Exception {
+    final String expectedServer = "Request Body from Client";
+    //var resultServer = '';
+    final String expectedClient = "Response Body from Server";
+    //var resultClient = '';
+    final Buffer toSend = TestUtils.generateRandomBuffer(1000);
+
+    Handler<HttpServer> handler = new Handler<HttpServer>() {
+      @Override
+      public void handle(HttpServer event) {
+        System.out.println("SERVER LISTENING");
+        HttpClientRequest request = client.post("/", new Handler<HttpClientResponse>() {
+          @Override
+          public void handle(final HttpClientResponse response) {
+            System.out.println("PAUSING CLIENT");
+            response.pause();
+            vertx.setTimer(100, new Handler<Long>() {
+              @Override
+              public void handle(Long event) {
+                response.dataHandler(new Handler<Buffer>() {
+                  @Override
+                  public void handle(Buffer chunk) {
+                    System.out.println("CLIENT DATA RECEIVED: " + chunk);
+                    //resultClient += buffer;
+                  }
+                });
+                response.endHandler(new Handler<Void>() {
+                  @Override
+                  public void handle(Void event) {
+                    System.out.println("RESPONSE ENDED");
+                    server.close();
+                    //vassert.assertEqual(expectedServer, resultServer);
+                    //vassert.assertEqual(expectedClient, resultClient);
+                    tu.testComplete();
+                  }
+                });
+                System.out.println("RESUMING CLIENT");
+                response.resume();
+              }
+            });
+          }
+        });
+        request.end(expectedServer);
+      }
+    };
+
+    startServer(new Handler<HttpServerRequest>() {
+      public void handle(final HttpServerRequest req) {
+        System.out.println("PAUSING SERVER");
+        req.pause();
+        vertx.setTimer(100, new Handler<Long>() {
+          @Override
+          public void handle(Long event) {
+            System.out.println("RESUMING SERVER");
+            req.resume();
+            req.dataHandler(new Handler<Buffer>() {
+              @Override
+              public void handle(Buffer buffer) {
+                System.out.print("SERVER DATA RECEIVED: " + buffer);
+                //esultServer += buffer;
+              }
+            });
+            req.endHandler(new Handler<Void>() {
+              @Override
+              public void handle(Void event) {
+                System.out.println("SERVER WRITING RESPONSE");
+                req.response.end(expectedClient);
+                System.out.println("SERVER RESPONSE ENDED");
+              }
+            });
+          }
+        });
+      }
+    }, handler);
+  }
+
   public void testClientDrainHandler() {
     final HttpClientRequest req = client.get("someurl", new Handler<HttpClientResponse>() {
       public void handle(HttpClientResponse resp) {

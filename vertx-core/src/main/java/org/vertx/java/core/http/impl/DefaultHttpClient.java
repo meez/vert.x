@@ -157,7 +157,7 @@ public class DefaultHttpClient implements HttpClient {
   public HttpClient getNow(String uri, Map<String, ? extends Object> headers, Handler<HttpClientResponse> responseHandler) {
     HttpClientRequest req = get(uri, responseHandler);
     if (headers != null) {
-      req.headers().putAll(headers);
+      req.headers().set(headers);
     }
     req.end();
     return this;

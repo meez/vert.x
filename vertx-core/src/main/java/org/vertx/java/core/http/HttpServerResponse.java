@@ -87,7 +87,7 @@ public interface HttpServerResponse extends WriteStream<HttpServerResponse> {
   /**
    * @return The HTTP headers
    */
-  Map<String, Object> headers();
+  HttpHeaders headers();
 
   /**
    * Put an HTTP header - fluent API
@@ -102,7 +102,7 @@ public interface HttpServerResponse extends WriteStream<HttpServerResponse> {
   /**
    * @return The HTTP trailers
    */
-  Map<String, Object> trailers();
+  HttpHeaders trailers();
 
   /**
    * Put an HTTP trailer - fluent API

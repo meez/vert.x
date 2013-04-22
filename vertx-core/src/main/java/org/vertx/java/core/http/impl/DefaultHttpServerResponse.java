@@ -19,17 +19,17 @@ package org.vertx.java.core.http.impl;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+
 import io.netty.handler.codec.http.*;
 import org.vertx.java.core.AsyncResult;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.buffer.Buffer;
 import org.vertx.java.core.file.impl.PathAdjuster;
+import org.vertx.java.core.http.HttpHeaders;
 import org.vertx.java.core.http.HttpServerResponse;
-import org.vertx.java.core.impl.LowerCaseKeyMap;
 import org.vertx.java.core.impl.VertxInternal;
 
 import java.io.File;
-import java.util.Map;
 
 import static io.netty.handler.codec.http.HttpHeaders.Names;
 
@@ -56,31 +56,27 @@ public class DefaultHttpServerResponse implements HttpServerResponse {
   private boolean chunked;
   private boolean closed;
   private ChannelFuture channelFuture;
-  private Map<String, Object> headers;
-  private Map<String, Object> trailers;
+  private final HttpHeaders headers;
+  private final LastHttpContent trailing = new DefaultLastHttpContent();
+  private final HttpHeaders trailers = new HttpHeadersAdapter(trailing.trailingHeaders());
 
   DefaultHttpServerResponse(final VertxInternal vertx, ServerConnection conn, HttpRequest request) {
   	this.vertx = vertx;
   	this.conn = conn;
     this.version = request.getProtocolVersion();
     this.response = new DefaultHttpResponse(version, HttpResponseStatus.OK);
+    this.headers = new HttpHeadersAdapter(response.headers());
     this.keepAlive = version == HttpVersion.HTTP_1_1 ||
         (version == HttpVersion.HTTP_1_0 && "Keep-Alive".equalsIgnoreCase(request.headers().get("Connection")));
   }
 
   @Override
-  public Map<String, Object> headers() {
-    if (headers == null) {
-      headers = new LowerCaseKeyMap<>();
-    }
+  public  HttpHeaders headers() {
     return headers;
   }
 
   @Override
-  public Map<String, Object> trailers() {
-    if (trailers == null) {
-      trailers = new LowerCaseKeyMap<>();
-    }
+  public HttpHeaders trailers() {
     return trailers;
   }
 
@@ -124,14 +120,14 @@ public class DefaultHttpServerResponse implements HttpServerResponse {
   @Override
   public DefaultHttpServerResponse putHeader(String key, Object value) {
     checkWritten();
-    headers().put(key, value);
+    headers().set(key, value);
     return this;
   }
 
   @Override
   public DefaultHttpServerResponse putTrailer(String key, Object value) {
     checkWritten();
-    trailers().put(key, value);
+    trailers().set(key, value);
     return this;
   }
 
@@ -198,7 +194,7 @@ public class DefaultHttpServerResponse implements HttpServerResponse {
   @Override
   public void end(Buffer chunk) {
     if (!chunked && !contentLengthSet()) {
-      headers().put(Names.CONTENT_LENGTH, String.valueOf(chunk.length()));
+      headers().set(Names.CONTENT_LENGTH, String.valueOf(chunk.length()));
     }
     write(chunk);
     end();
@@ -220,20 +216,7 @@ public class DefaultHttpServerResponse implements HttpServerResponse {
   public void end() {
     checkWritten();
     writeHead();
-    if (trailers == null) {
-      channelFuture = conn.write(LastHttpContent.EMPTY_LAST_CONTENT);
-    } else {
-      LastHttpContent trlrs = new DefaultLastHttpContent();
-      for (Map.Entry<String, Object> trailer: trailers.entrySet()) {
-        Object value = trailer.getValue();
-        if (value instanceof Iterable<?>) {
-          trlrs.trailingHeaders().set(trailer.getKey(), (Iterable<?>) value);
-        } else {
-          trlrs.trailingHeaders().set(trailer.getKey(), value);
-        }
-      }
-      channelFuture = conn.write(trlrs);
-    }
+    channelFuture = conn.write(trailing);
 
     if (!keepAlive) {
       closeConnAfterWrite();
@@ -252,7 +235,6 @@ public class DefaultHttpServerResponse implements HttpServerResponse {
     if (!file.exists()) {
       sendNotFound();
     } else {
-      writeHeaders();
       if (!contentLengthSet()) {
         response.headers().set(Names.CONTENT_LENGTH, String.valueOf(file.length()));
       }
@@ -278,19 +260,11 @@ public class DefaultHttpServerResponse implements HttpServerResponse {
   }
 
   private boolean contentLengthSet() {
-    if (headers != null) {
-      return headers.containsKey(Names.CONTENT_LENGTH);
-    } else {
-      return false;
-    }
+    return headers.contains(Names.CONTENT_LENGTH);
   }
 
   private boolean contentTypeSet() {
-    if (headers != null) {
-      return headers.containsKey(Names.CONTENT_TYPE);
-    } else {
-      return false;
-    }
+    return headers.contains(Names.CONTENT_TYPE);
   }
 
   private void closeConnAfterWrite() {
@@ -347,38 +321,26 @@ public class DefaultHttpServerResponse implements HttpServerResponse {
     if (version == HttpVersion.HTTP_1_0 && keepAlive) {
       response.headers().set("Connection", "Keep-Alive");
     }
-    writeHeaders();
     if (chunked) {
-      response.headers().set(Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
+      response.headers().set(Names.TRANSFER_ENCODING, io.netty.handler.codec.http.HttpHeaders.Values.CHUNKED);
     } else if (version != HttpVersion.HTTP_1_0 && !contentLengthSet()) {
       response.headers().set(Names.CONTENT_LENGTH, "0");
     }
   }
-  private void writeHeaders() {
-    if (headers != null) {
-      for (Map.Entry<String, Object> header: headers.entrySet()) {
-        String key = header.getKey();
-        Object value = header.getValue();
-        if (value instanceof Iterable<?>) {
-          response.headers().set(key, (Iterable<?>) value);
-        } else {
-          response.headers().set(key, value);
-        }
-      }
-    }
-  }
+
 
   private DefaultHttpServerResponse write(ByteBuf chunk, final Handler<AsyncResult<Void>> doneHandler) {
     checkWritten();
+    if (version != HttpVersion.HTTP_1_0 && !chunked && !contentLengthSet()) {
+      throw new IllegalStateException("You must set the Content-Length header to be the total size of the message "
+                                              + "body BEFORE sending any data if you are not using HTTP chunked encoding.");
+    }
     if (!headWritten) {
       prepareHeaders();
       conn.queueForWrite(response);
       headWritten = true;
     }
-    if (version != HttpVersion.HTTP_1_0 && !chunked && !contentLengthSet()) {
-      throw new IllegalStateException("You must set the Content-Length header to be the total size of the message "
-          + "body BEFORE sending any data if you are not using HTTP chunked encoding.");
-    }
+
     Object msg = chunked ? new DefaultHttpContent(chunk) : chunk;
     channelFuture = conn.write(msg);
     conn.addFuture(doneHandler, channelFuture);

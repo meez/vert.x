@@ -1,3 +1,19 @@
+/*
+ * Copyright 2011-2013 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.vertx.java.core.http;
 
 import java.util.List;
@@ -7,7 +23,7 @@ import java.util.Set;
 /**
  * @author <a href="mailto:nmaurer@redhat.com">Norman Maurer</a>
  */
-public interface HttpHeaders extends  Iterable<Map.Entry<String, String>> {
+public interface HttpHeaders extends Iterable<Map.Entry<String, String>> {
 
   /**
    * Returns the value of a header with the specified name.  If there are
@@ -134,11 +150,18 @@ public interface HttpHeaders extends  Iterable<Map.Entry<String, String>> {
   HttpHeaders set(HttpHeaders headers);
 
   /**
-   * Removes the header with the specified name.
+   * Cleans the current header entries and copies all header entries of the specified {@code headers}.
    *
-   * @param name The name of the header to remove
    * @return {@code this}
    */
+  HttpHeaders set(Map<String, ? extends Object> headers);
+
+ /**
+  * Removes the header with the specified name.
+  *
+  * @param name The name of the header to remove
+  * @return {@code this}
+  */
   HttpHeaders remove(String name);
 
   /**
@@ -147,4 +170,9 @@ public interface HttpHeaders extends  Iterable<Map.Entry<String, String>> {
    * @return {@code this}
    */
    HttpHeaders clear();
+
+  /**
+   * Return the number of different header names in the HttpHeaders.
+   */
+  int size();
 }

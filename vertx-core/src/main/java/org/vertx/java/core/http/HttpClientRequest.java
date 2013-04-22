@@ -77,7 +77,7 @@ public interface HttpClientRequest extends WriteStream<HttpClientRequest> {
   /**
    * @return The HTTP headers
    */
-  Map<String, Object> headers();
+  HttpHeaders headers();
 
   /**
    * Put an HTTP header - fluent API

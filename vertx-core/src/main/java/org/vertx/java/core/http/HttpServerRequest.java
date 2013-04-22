@@ -74,7 +74,7 @@ public interface HttpServerRequest extends ReadStream<HttpServerRequest> {
    * as specified <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2">here</a>.
    * The headers will be automatically lower-cased when they reach the server
    */
-  Map<String, String> headers();
+  HttpHeaders headers();
 
   /**
    * Returns a map of all the parameters in the request

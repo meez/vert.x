@@ -21,6 +21,7 @@ import io.netty.handler.codec.http.QueryStringDecoder;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.VoidHandler;
 import org.vertx.java.core.buffer.Buffer;
+import org.vertx.java.core.http.HttpHeaders;
 import org.vertx.java.core.http.HttpServerRequest;
 import org.vertx.java.core.http.HttpServerResponse;
 import org.vertx.java.core.logging.Logger;
@@ -59,7 +60,7 @@ public class DefaultHttpServerRequest implements HttpServerRequest {
 
   //Cache this for performance
   private Map<String, String> params;
-  private Map<String, String> headers;
+  private final HttpHeaders headers;
   private URI absoluteURI;
 
   DefaultHttpServerRequest(final ServerConnection conn,
@@ -68,6 +69,7 @@ public class DefaultHttpServerRequest implements HttpServerRequest {
     this.conn = conn;
     this.request = request;
     this.response = response;
+    headers = new HttpHeadersAdapter(request.headers());
   }
 
   @Override
@@ -119,10 +121,7 @@ public class DefaultHttpServerRequest implements HttpServerRequest {
   }
 
   @Override
-  public Map<String, String> headers() {
-    if (headers == null) {
-      headers = HeaderUtils.simplifyHeaders(request.headers().entries());
-    }
+  public HttpHeaders headers() {
     return headers;
   }
 

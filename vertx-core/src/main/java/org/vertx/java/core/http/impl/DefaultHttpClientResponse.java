@@ -16,19 +16,19 @@
 
 package org.vertx.java.core.http.impl;
 
+import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.LastHttpContent;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.VoidHandler;
 import org.vertx.java.core.buffer.Buffer;
 import org.vertx.java.core.http.HttpClientResponse;
+import org.vertx.java.core.http.HttpHeaders;
 import org.vertx.java.core.logging.Logger;
 import org.vertx.java.core.logging.impl.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  *
@@ -50,13 +50,14 @@ public class DefaultHttpClientResponse implements HttpClientResponse  {
   private LastHttpContent trailer;
 
   // Cache these for performance
-  private Map<String, String> headers;
-  private Map<String, String> trailers;
+  private final HttpHeaders headers;
+  private HttpHeaders trailers = new HttpHeadersAdapter(new DefaultHttpHeaders());
   private List<String> cookies;
 
   DefaultHttpClientResponse(DefaultHttpClientRequest request, ClientConnection conn, HttpResponse response) {
     statusCode = response.getStatus().code();
     statusMessage = response.getStatus().reasonPhrase();
+    this.headers = new HttpHeadersAdapter(response.headers());
     this.request = request;
     this.conn = conn;
     this.response = response;
@@ -73,22 +74,12 @@ public class DefaultHttpClientResponse implements HttpClientResponse  {
   }
 
   @Override
-  public Map<String, String> headers() {
-    if (headers == null) {
-      headers = HeaderUtils.simplifyHeaders(response.headers().entries());
-    }
+  public HttpHeaders headers() {
     return headers;
   }
 
   @Override
-  public Map<String, String> trailers() {
-    if (trailers == null) {
-      if (trailer == null) {
-        trailers = new HashMap<String, String>();
-      } else {
-        trailers = HeaderUtils.simplifyHeaders(trailer.trailingHeaders().entries());
-      }
-    }
+  public HttpHeaders trailers() {
     return trailers;
   }
 
@@ -159,6 +150,7 @@ public class DefaultHttpClientResponse implements HttpClientResponse  {
 
   void handleEnd(LastHttpContent trailer) {
     this.trailer = trailer;
+    trailers = new HttpHeadersAdapter(trailer.trailingHeaders());
     if (endHandler != null) {
       endHandler.handle(null);
     }

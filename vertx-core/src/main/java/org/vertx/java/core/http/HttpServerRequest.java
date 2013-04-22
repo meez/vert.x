@@ -24,7 +24,6 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.security.cert.X509Certificate;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.Map;
 
 /**
  * Represents a server-side HTTP request.<p>
@@ -74,12 +73,12 @@ public interface HttpServerRequest extends ReadStream<HttpServerRequest> {
    * as specified <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2">here</a>.
    * The headers will be automatically lower-cased when they reach the server
    */
-  HttpHeaders headers();
+  MultiMap headers();
 
   /**
    * Returns a map of all the parameters in the request
    */
-  Map<String, String> params();
+  MultiMap params();
 
   /**
    * Return the remote (client side) address of the request

@@ -49,12 +49,12 @@ public interface HttpClientResponse extends ReadStream<HttpClientResponse> {
   /**
    * @return The HTTP headers
    */
-  HttpHeaders headers();
+  MultiMap headers();
 
   /**
    * @return The HTTP trailers
    */
-  HttpHeaders trailers();
+  MultiMap trailers();
 
   /**
    * @return The Set-Cookie headers (including trailers)

@@ -23,7 +23,7 @@ import org.vertx.java.core.Handler;
 import org.vertx.java.core.VoidHandler;
 import org.vertx.java.core.buffer.Buffer;
 import org.vertx.java.core.http.HttpClientResponse;
-import org.vertx.java.core.http.HttpHeaders;
+import org.vertx.java.core.http.MultiMap;
 import org.vertx.java.core.logging.Logger;
 import org.vertx.java.core.logging.impl.LoggerFactory;
 
@@ -50,8 +50,8 @@ public class DefaultHttpClientResponse implements HttpClientResponse  {
   private LastHttpContent trailer;
 
   // Cache these for performance
-  private final HttpHeaders headers;
-  private HttpHeaders trailers = new HttpHeadersAdapter(new DefaultHttpHeaders());
+  private final MultiMap headers;
+  private MultiMap trailers = new HttpHeadersAdapter(new DefaultHttpHeaders());
   private List<String> cookies;
 
   DefaultHttpClientResponse(DefaultHttpClientRequest request, ClientConnection conn, HttpResponse response) {
@@ -74,12 +74,12 @@ public class DefaultHttpClientResponse implements HttpClientResponse  {
   }
 
   @Override
-  public HttpHeaders headers() {
+  public MultiMap headers() {
     return headers;
   }
 
   @Override
-  public HttpHeaders trailers() {
+  public MultiMap trailers() {
     return trailers;
   }
 

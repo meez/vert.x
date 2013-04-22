@@ -565,7 +565,7 @@ public class HttpTestClient extends TestClientBase {
         tu.checkThread();
         tu.azzert(query.equals(req.query()));
         tu.azzert(req.params().size() == params.size());
-        for (Map.Entry<String, String> entry : req.params().entrySet()) {
+        for (Map.Entry<String, String> entry : req.params()) {
           tu.azzert(entry.getValue().equals(params.get(entry.getKey())));
         }
         req.response().end();
@@ -630,7 +630,7 @@ public class HttpTestClient extends TestClientBase {
   }
 
   private void testRequestHeaders(final boolean individually) {
-    final HttpHeaders headers = getHeaders(10);
+    final MultiMap headers = getHeaders(10);
 
     AsyncResultHandler<HttpServer> handler = new AsyncResultHandler<HttpServer>() {
       @Override
@@ -1375,7 +1375,7 @@ public class HttpTestClient extends TestClientBase {
   }
 
   private void testResponseHeaders(final boolean individually) {
-    final HttpHeaders headers = getHeaders(10);
+    final MultiMap headers = getHeaders(10);
     AsyncResultHandler<HttpServer> handler = new AsyncResultHandler<HttpServer>() {
       @Override
       public void handle(AsyncResult<HttpServer> ar) {
@@ -1419,7 +1419,7 @@ public class HttpTestClient extends TestClientBase {
   }
 
   private void testResponseTrailers(final boolean individually) {
-    final HttpHeaders trailers = getHeaders(10);
+    final MultiMap trailers = getHeaders(10);
     AsyncResultHandler<HttpServer> handler = new AsyncResultHandler<HttpServer>() {
       @Override
       public void handle(AsyncResult<HttpServer> ar) {
@@ -2610,9 +2610,9 @@ public class HttpTestClient extends TestClientBase {
     return req;
   }
 
-  private static HttpHeaders getHeaders(int num) {
+  private static MultiMap getHeaders(int num) {
     Map<String, String> map = genMap(num);
-    HttpHeaders headers = new HttpHeadersAdapter(new DefaultHttpHeaders());
+    MultiMap headers = new HttpHeadersAdapter(new DefaultHttpHeaders());
     for (Map.Entry<String, String> entry: map.entrySet()) {
       headers.add(entry.getKey(), entry.getValue());
     }

@@ -16,12 +16,9 @@
 
 package org.vertx.java.core.http;
 
-import org.vertx.java.core.AsyncResult;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.buffer.Buffer;
 import org.vertx.java.core.streams.WriteStream;
-
-import java.util.Map;
 
 /**
  * Represents a server-side HTTP response.<p>
@@ -87,7 +84,7 @@ public interface HttpServerResponse extends WriteStream<HttpServerResponse> {
   /**
    * @return The HTTP headers
    */
-  HttpHeaders headers();
+  MultiMap headers();
 
   /**
    * Put an HTTP header - fluent API
@@ -102,7 +99,7 @@ public interface HttpServerResponse extends WriteStream<HttpServerResponse> {
   /**
    * @return The HTTP trailers
    */
-  HttpHeaders trailers();
+  MultiMap trailers();
 
   /**
    * Put an HTTP trailer - fluent API

@@ -25,7 +25,7 @@ import org.vertx.java.core.AsyncResult;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.buffer.Buffer;
 import org.vertx.java.core.file.impl.PathAdjuster;
-import org.vertx.java.core.http.HttpHeaders;
+import org.vertx.java.core.http.MultiMap;
 import org.vertx.java.core.http.HttpServerResponse;
 import org.vertx.java.core.impl.VertxInternal;
 
@@ -56,9 +56,9 @@ public class DefaultHttpServerResponse implements HttpServerResponse {
   private boolean chunked;
   private boolean closed;
   private ChannelFuture channelFuture;
-  private final HttpHeaders headers;
+  private final MultiMap headers;
   private final LastHttpContent trailing = new DefaultLastHttpContent();
-  private final HttpHeaders trailers = new HttpHeadersAdapter(trailing.trailingHeaders());
+  private final MultiMap trailers = new HttpHeadersAdapter(trailing.trailingHeaders());
 
   DefaultHttpServerResponse(final VertxInternal vertx, ServerConnection conn, HttpRequest request) {
   	this.vertx = vertx;
@@ -71,12 +71,12 @@ public class DefaultHttpServerResponse implements HttpServerResponse {
   }
 
   @Override
-  public  HttpHeaders headers() {
+  public MultiMap headers() {
     return headers;
   }
 
   @Override
-  public HttpHeaders trailers() {
+  public MultiMap trailers() {
     return trailers;
   }
 

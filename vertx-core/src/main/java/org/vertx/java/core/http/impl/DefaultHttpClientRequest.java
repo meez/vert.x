@@ -55,7 +55,7 @@ public class DefaultHttpClientRequest implements HttpClientRequest {
   private boolean writeHead;
   private long written;
   private long currentTimeoutTimerId = -1;
-  private final org.vertx.java.core.http.HttpHeaders headers;
+  private final MultiMap headers;
   private boolean exceptionOccurred;
   private long lastDataReceived;
 
@@ -107,7 +107,7 @@ public class DefaultHttpClientRequest implements HttpClientRequest {
   }
 
   @Override
-  public org.vertx.java.core.http.HttpHeaders headers() {
+  public MultiMap headers() {
     return headers;
   }
 

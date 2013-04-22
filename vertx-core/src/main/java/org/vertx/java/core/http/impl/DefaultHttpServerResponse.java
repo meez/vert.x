@@ -56,27 +56,35 @@ public class DefaultHttpServerResponse implements HttpServerResponse {
   private boolean chunked;
   private boolean closed;
   private ChannelFuture channelFuture;
-  private final MultiMap headers;
-  private final LastHttpContent trailing = new DefaultLastHttpContent();
-  private final MultiMap trailers = new HttpHeadersAdapter(trailing.trailingHeaders());
+  private MultiMap headers;
+  private LastHttpContent trailing;
+  private MultiMap trailers;
 
   DefaultHttpServerResponse(final VertxInternal vertx, ServerConnection conn, HttpRequest request) {
   	this.vertx = vertx;
   	this.conn = conn;
     this.version = request.getProtocolVersion();
     this.response = new DefaultHttpResponse(version, HttpResponseStatus.OK);
-    this.headers = new HttpHeadersAdapter(response.headers());
     this.keepAlive = version == HttpVersion.HTTP_1_1 ||
         (version == HttpVersion.HTTP_1_0 && "Keep-Alive".equalsIgnoreCase(request.headers().get("Connection")));
   }
 
   @Override
   public MultiMap headers() {
+    if (headers == null) {
+      headers = new HttpHeadersAdapter(response.headers());
+    }
     return headers;
   }
 
   @Override
   public MultiMap trailers() {
+    if (trailers == null) {
+      if (trailing == null) {
+        trailing = new DefaultLastHttpContent();
+      }
+      trailers = new HttpHeadersAdapter(trailing.trailingHeaders());
+    }
     return trailers;
   }
 
@@ -216,7 +224,11 @@ public class DefaultHttpServerResponse implements HttpServerResponse {
   public void end() {
     checkWritten();
     writeHead();
-    channelFuture = conn.write(trailing);
+    if (trailing == null) {
+      channelFuture = conn.write(DefaultLastHttpContent.EMPTY_LAST_CONTENT);
+    } else {
+      channelFuture = conn.write(trailing);
+    }
 
     if (!keepAlive) {
       closeConnAfterWrite();
@@ -260,10 +272,16 @@ public class DefaultHttpServerResponse implements HttpServerResponse {
   }
 
   private boolean contentLengthSet() {
+    if (headers == null) {
+      return false;
+    }
     return headers.contains(Names.CONTENT_LENGTH);
   }
 
   private boolean contentTypeSet() {
+    if (headers == null) {
+      return false;
+    }
     return headers.contains(Names.CONTENT_TYPE);
   }
 

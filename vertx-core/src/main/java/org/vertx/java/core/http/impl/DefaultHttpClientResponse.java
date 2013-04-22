@@ -50,14 +50,13 @@ public class DefaultHttpClientResponse implements HttpClientResponse  {
   private LastHttpContent trailer;
 
   // Cache these for performance
-  private final MultiMap headers;
-  private MultiMap trailers = new HttpHeadersAdapter(new DefaultHttpHeaders());
+  private MultiMap headers;
+  private MultiMap trailers;
   private List<String> cookies;
 
   DefaultHttpClientResponse(DefaultHttpClientRequest request, ClientConnection conn, HttpResponse response) {
     statusCode = response.getStatus().code();
     statusMessage = response.getStatus().reasonPhrase();
-    this.headers = new HttpHeadersAdapter(response.headers());
     this.request = request;
     this.conn = conn;
     this.response = response;
@@ -75,11 +74,17 @@ public class DefaultHttpClientResponse implements HttpClientResponse  {
 
   @Override
   public MultiMap headers() {
+    if (headers == null) {
+      headers = new HttpHeadersAdapter(response.headers());
+    }
     return headers;
   }
 
   @Override
   public MultiMap trailers() {
+    if (trailers == null) {
+      trailers = new HttpHeadersAdapter(new DefaultHttpHeaders());
+    }
     return trailers;
   }
 

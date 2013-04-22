@@ -59,7 +59,7 @@ public class DefaultHttpServerRequest implements HttpServerRequest {
 
   //Cache this for performance
   private MultiMap params;
-  private final MultiMap headers;
+  private MultiMap headers;
   private URI absoluteURI;
 
   DefaultHttpServerRequest(final ServerConnection conn,
@@ -68,7 +68,6 @@ public class DefaultHttpServerRequest implements HttpServerRequest {
     this.conn = conn;
     this.request = request;
     this.response = response;
-    headers = new HttpHeadersAdapter(request.headers());
   }
 
   @Override
@@ -121,6 +120,9 @@ public class DefaultHttpServerRequest implements HttpServerRequest {
 
   @Override
   public MultiMap headers() {
+    if (headers == null) {
+      headers = new HttpHeadersAdapter(request.headers());
+    }
     return headers;
   }
 

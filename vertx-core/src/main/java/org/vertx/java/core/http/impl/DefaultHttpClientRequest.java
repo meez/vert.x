@@ -55,7 +55,7 @@ public class DefaultHttpClientRequest implements HttpClientRequest {
   private boolean writeHead;
   private long written;
   private long currentTimeoutTimerId = -1;
-  private final MultiMap headers;
+  private MultiMap headers;
   private boolean exceptionOccurred;
   private long lastDataReceived;
 
@@ -83,7 +83,6 @@ public class DefaultHttpClientRequest implements HttpClientRequest {
                                    final Context context, final boolean raw) {
     this.client = client;
     this.request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.valueOf(method), uri);
-    this.headers = new HttpHeadersAdapter(request.headers());
     this.chunked = false;
     this.respHandler = respHandler;
     this.context = context;
@@ -108,6 +107,9 @@ public class DefaultHttpClientRequest implements HttpClientRequest {
 
   @Override
   public MultiMap headers() {
+    if (headers == null) {
+      headers = new HttpHeadersAdapter(request.headers());
+    }
     return headers;
   }
 

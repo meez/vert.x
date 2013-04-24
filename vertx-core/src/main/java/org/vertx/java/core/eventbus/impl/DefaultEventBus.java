@@ -16,12 +16,10 @@
 
 package org.vertx.java.core.eventbus.impl;
 
-import org.vertx.java.core.AsyncResult;
-import org.vertx.java.core.AsyncResultHandler;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.SimpleHandler;
+import org.vertx.java.core.*;
 import org.vertx.java.core.buffer.Buffer;
 import org.vertx.java.core.eventbus.EventBus;
+import org.vertx.java.core.eventbus.Failure;
 import org.vertx.java.core.eventbus.Message;
 import org.vertx.java.core.eventbus.impl.hazelcast.HazelcastClusterManager;
 import org.vertx.java.core.impl.Context;
@@ -55,6 +53,7 @@ public class DefaultEventBus implements EventBus {
   private static final long PING_INTERVAL = 20000;
   private static final long PING_REPLY_INTERVAL = 20000;
   public static final int DEFAULT_CLUSTER_PORT = 2550;
+  private static final int DEFAULT_REPLY_TIMEOUT = 0;
   private final VertxInternal vertx;
   private final ServerID serverID;
   private NetServer server;
@@ -64,6 +63,7 @@ public class DefaultEventBus implements EventBus {
   private final AtomicInteger seq = new AtomicInteger(0);
   private final String prefix = UUID.randomUUID().toString();
   private final ClusterManager clusterMgr;
+  private final int defaultReplyTimeout;
   
   public DefaultEventBus(VertxInternal vertx) {
     // Just some dummy server ID
@@ -72,6 +72,7 @@ public class DefaultEventBus implements EventBus {
     this.server = null;
     this.subs = null;
     this.clusterMgr = null;
+    this.defaultReplyTimeout = getDefaultReplyTimeout();
   }
 
   public DefaultEventBus(VertxInternal vertx, String hostname) {
@@ -84,6 +85,18 @@ public class DefaultEventBus implements EventBus {
     this.clusterMgr = createClusterManager(vertx);
     this.subs = clusterMgr.getSubsMap("subs");
     this.server = setServer();
+    this.defaultReplyTimeout = getDefaultReplyTimeout();
+  }
+  
+  protected int getDefaultReplyTimeout() {
+    int timeout;
+    try {
+      timeout=Integer.parseInt(System.getProperty("org.vertx.core-eventbus-replyTimeout"));
+    } catch (Exception e) {
+      timeout=DEFAULT_REPLY_TIMEOUT;
+    }
+    log.info("Default reply timeout "+(timeout>0?"set to "+timeout/1000+"s":"not enabled"));
+    return timeout;
   }
 
   protected ClusterManager createClusterManager(final VertxInternal vertx) {
@@ -248,7 +261,7 @@ public class DefaultEventBus implements EventBus {
 
   public void registerHandler(String address, Handler<? extends Message> handler,
                               AsyncResultHandler<Void> completionHandler) {
-    registerHandler(address, handler, completionHandler, false, false);
+    registerHandler(address, handler, completionHandler, false, false, 0L);
   }
 
   public void registerHandler(String address, Handler<? extends Message> handler) {
@@ -256,7 +269,7 @@ public class DefaultEventBus implements EventBus {
   }
 
   public void registerLocalHandler(String address, Handler<? extends Message> handler) {
-    registerHandler(address, handler, null, false, true);
+    registerHandler(address, handler, null, false, true, 0L);
   }
 
   public void unregisterHandler(String address, Handler<? extends Message> handler,
@@ -272,6 +285,10 @@ public class DefaultEventBus implements EventBus {
           HandlerHolder holder = handlers.list.get(i);
           if (holder.handler == handler) {
             handlers.list.remove(i);
+            // Cancel timeout timer asap
+            if (holder.timeoutId>0L)
+              vertx.cancelTimer(holder.timeoutId);
+            // PMCD: Should cleanup be done in the context?
             holder.removed = true;
             if (handlers.list.isEmpty()) {
               handlerMap.remove(address);
@@ -307,7 +324,11 @@ public class DefaultEventBus implements EventBus {
   }
 
   void sendReply(final ServerID dest, final BaseMessage message, final Handler replyHandler) {
-    sendOrPub(dest, message, replyHandler);
+    sendOrPub(dest, message, replyHandler, this.defaultReplyTimeout);
+  }
+
+  void respondFailure(final ServerID dest, final Message src, final Failure f) {
+	  sendOrPub(dest, new FailureMessage(true, src.replyAddress, f), null, 0);
   }
 
   private NetServer setServer() {
@@ -361,17 +382,28 @@ public class DefaultEventBus implements EventBus {
   }
 
   private void sendOrPub(final BaseMessage message, final Handler replyHandler) {
-    sendOrPub(null, message, replyHandler);
+    // Get the timeout via interface. This is kind of janky but it means we don't need to extend all the send<T> calls
+    // with timeout variants
+    Integer timeout=null;
+    if (replyHandler instanceof HandlerEx) {
+      HandlerEx he=(HandlerEx)replyHandler;
+      timeout=he.timeout();
+    }
+    sendOrPub(message, replyHandler, (timeout!=null)?timeout.intValue():this.defaultReplyTimeout);
   }
 
-  private void sendOrPub(ServerID replyDest, final BaseMessage message, final Handler replyHandler) {
+  private void sendOrPub(final BaseMessage message, final Handler replyHandler, int timeout) {
+    sendOrPub(null, message, replyHandler, timeout);
+  }
+
+  private void sendOrPub(ServerID replyDest, final BaseMessage message, final Handler replyHandler, int timeout) {
     Context context = vertx.getOrAssignContext();
     try {
       message.sender = serverID;
       if (replyHandler != null) {
         //message.replyAddress = UUID.randomUUID().toString();
         message.replyAddress = prefix + String.valueOf(seq.incrementAndGet());
-        registerHandler(message.replyAddress, replyHandler, null, true, true);
+        registerHandler(message.replyAddress, replyHandler, null, true, true, timeout);
       }
       if (replyDest != null) {
         if (!replyDest.equals(this.serverID)) {
@@ -410,14 +442,15 @@ public class DefaultEventBus implements EventBus {
     }
   }
 
-  private void registerHandler(String address, Handler<? extends Message> handler,
+  private void registerHandler(final String address, final Handler<? extends Message> handler,
                                AsyncResultHandler<Void> completionHandler,
-                               boolean replyHandler, boolean localOnly) {
+                               boolean replyHandler, boolean localOnly, long timeout) {
     if (address == null) {
       throw new NullPointerException("address");
     }
     Context context = vertx.getOrAssignContext();
     Handlers handlers = handlerMap.get(address);
+    final HandlerHolder holder=new HandlerHolder(handler, replyHandler, localOnly, context);
     if (handlers == null) {
       handlers = new Handlers();
       Handlers prevHandlers = handlerMap.putIfAbsent(address, handlers);
@@ -433,7 +466,7 @@ public class DefaultEventBus implements EventBus {
           }
         };
       }
-      handlers.list.add(new HandlerHolder(handler, replyHandler, localOnly, context));
+      handlers.list.add(holder);
       if (subs != null && !replyHandler && !localOnly) {
         // Propagate the information
         subs.put(address, serverID, completionHandler);
@@ -441,14 +474,26 @@ public class DefaultEventBus implements EventBus {
         callCompletionHandler(completionHandler);
       }
     } else {
-      handlers.list.add(new HandlerHolder(handler, replyHandler, localOnly, context));
+      handlers.list.add(holder);
       if (completionHandler != null) {
         callCompletionHandler(completionHandler);
       }
     }
+    
+    // Timeout only supported for replyHandlers
+    if (timeout>0L && replyHandler) {
+      holder.timeoutId=vertx.setTimer(timeout,new Handler<Long>() {
+        public void handle(Long event) {
+          // Clear timer reference
+          holder.timeoutId=0L;
+          doTimeout(address,holder);
+        }
+      });
+    }
+    
     getHandlerCloseHook(context).entries.add(new HandlerEntry(address, handler));
   }
-
+  
   private HandlerCloseHook getHandlerCloseHook(Context context) {
     HandlerCloseHook hcl = (HandlerCloseHook)context.getCloseHook(this);
     if (hcl == null) {
@@ -570,6 +615,9 @@ public class DefaultEventBus implements EventBus {
         if (holder != null) {
           doReceive(msg, holder);
         }
+        else if (msg.replyAddress!=null) {
+          respondFailure(msg.sender,msg,new Failure(Failure.NOT_IMPLEMENTED,String.format("No handler available for %s",msg.address)));
+        }
       } else {
         // Publish
         for (final HandlerHolder holder: handlers.list) {
@@ -577,8 +625,35 @@ public class DefaultEventBus implements EventBus {
         }
       }
     }
+    else if (msg.replyAddress!=null) {
+      respondFailure(msg.sender,msg,new Failure(Failure.NOT_IMPLEMENTED,String.format("No handler registered for %s",msg.address)));
+    }
   }
 
+  private void doTimeout(final String address, final HandlerHolder holder) {
+    holder.context.execute(new Runnable() {
+      public void run() {
+        // Check handler still valid
+        if (holder.removed)
+          return;
+        
+        log.debug("Request timeout on "+address+", failing");
+        
+        try {
+          if (holder.handler instanceof HandlerEx) {
+            ((HandlerEx)holder.handler).fail(new Failure(Failure.REQUEST_TIMEOUT,"No response recieved"));
+            return;
+          }
+        } catch (Throwable t) {
+          log.warn("Timeout failure handler failed (e="+t+") Ignoring");
+        }
+
+        // Unregister handler
+        unregisterHandler(address, holder.handler);
+      }
+    });
+  }
+  
   private void doReceive(final BaseMessage msg, final HandlerHolder holder) {
     // Each handler gets a fresh copy
     final Message copied = msg.copy();
@@ -589,9 +664,18 @@ public class DefaultEventBus implements EventBus {
 	      // before it was received
 	      try {
 	        if (!holder.removed) {
-	          holder.handler.handle(copied);
+            // Failure messages are reported to HandlerEx or logged
+            if (copied instanceof FailureMessage) {
+              doFailure(holder.handler,(FailureMessage)copied);
+            } else {
+  	          holder.handler.handle(copied);
+            }
 	        }
-	      } finally {
+        } catch(Throwable t) {
+          // If the message has a reply then try send a failure to the originator
+          if (copied.replyAddress!=null)
+            respondFailure(msg.sender,copied,new Failure(Failure.INTERNAL_ERROR,t));	   
+        } finally {
 	        if (holder.replyHandler) {
 	          unregisterHandler(msg.address, holder.handler);
 	        }
@@ -599,19 +683,33 @@ public class DefaultEventBus implements EventBus {
       }
     });
   }
+  
+  private void doFailure(Handler handler, FailureMessage fm) {
+    try {
+      if (handler instanceof HandlerEx) {
+        ((HandlerEx)handler).fail(fm.body);
+        return;
+      }
+    } catch (Throwable t) {
+      log.warn("Failure handler failed (e="+t+") Ignoring");
+    }
+    log.debug("Received "+fm+" to "+fm.address+" [ignoring]");
+  }
 	
   private static class HandlerHolder {
     final Context context;
     final Handler handler;
     final boolean replyHandler;
     final boolean localOnly;
-    boolean removed;
+    volatile long timeoutId;
+    volatile boolean removed;
 
     HandlerHolder(Handler handler, boolean replyHandler, boolean localOnly, Context context) {
       this.context = context;
       this.handler = handler;
       this.replyHandler = replyHandler;
       this.localOnly = localOnly;
+      this.timeoutId = 0L;
     }
 
     @Override
@@ -752,7 +850,7 @@ public class DefaultEventBus implements EventBus {
   private class HandlerCloseHook implements Runnable {
 
     final Set<HandlerEntry> entries = new HashSet<>();
-
+    
     public void run() {
       for (HandlerEntry entry: new HashSet<>(entries)) {
         unregisterHandler(entry.address, entry.handler);

@@ -105,6 +105,21 @@ public class JavaEventBusTest extends TestBase {
   }
 
   @Test
+  public void testBadHandler() {
+    runPeerTest(getMethodName());
+  }
+  
+  @Test
+  public void testSlowHandler() {
+    runPeerTest(getMethodName());
+  }
+
+  @Test
+  public void testNoHandler() {
+    startTest(getMethodName(), true);
+  }
+
+  @Test
   public void testLocal1() {
     startTest(getMethodName());
   }

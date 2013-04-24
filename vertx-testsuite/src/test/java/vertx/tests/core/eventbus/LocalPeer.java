@@ -213,5 +213,60 @@ public class LocalPeer extends EventBusAppBase {
     );
   }
 
+  public void testBadHandlerInitialise() {
+    final String address = UUID.randomUUID().toString();
+    Set<String> addresses = vertx.sharedData().getSet("addresses");
+    addresses.add(address);
+    eb.registerHandler(address, new Handler<Message<String>>() {
+          boolean handled = false;
 
+          public void handle(Message<String> msg) {
+            tu.checkContext();
+            tu.azzert(!handled);
+            eb.unregisterHandler(address, this);
+            handled=true;
+            
+            throw new NullPointerException("synthetic-error");
+          }
+        }, new AsyncResultHandler<Void>() {
+      public void handle(AsyncResult<Void> event) {
+        if (event.exception == null) {
+          tu.testComplete();
+        } else {
+          tu.azzert(false, "Failed to register");
+        }
+      }
+    }
+    );
+  }
+
+  public void testSlowHandlerInitialise() {
+    final String address = UUID.randomUUID().toString();
+    Set<String> addresses = vertx.sharedData().getSet("addresses");
+    addresses.add(address);
+    eb.registerHandler(address, new Handler<Message<Integer>>() {
+          boolean handled = false;
+          public void handle(final Message<Integer> msg) {
+            tu.checkContext();
+            tu.azzert(!handled);
+            eb.unregisterHandler(address, this);
+            handled = true;
+            // Use argument as time delay
+            vertx.setTimer(msg.body, new Handler<Long>() {
+              public void handle(Long id) {
+                msg.reply(msg.body);
+              }
+            });
+          }
+        }, new AsyncResultHandler<Void>() {
+      public void handle(AsyncResult<Void> event) {
+        if (event.exception == null) {
+          tu.testComplete();
+        } else {
+          tu.azzert(false, "Failed to register");
+        }
+      }
+    }
+    );
+  }
 }

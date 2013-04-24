@@ -17,8 +17,12 @@
 package vertx.tests.core.eventbus;
 
 import org.vertx.java.core.Handler;
+import org.vertx.java.core.ReplyHandler;
 import org.vertx.java.core.buffer.Buffer;
+import org.vertx.java.core.eventbus.Failure;
 import org.vertx.java.core.eventbus.Message;
+import org.vertx.java.core.logging.Logger;
+import org.vertx.java.core.logging.impl.LoggerFactory;
 import org.vertx.java.testframework.TestUtils;
 
 import java.util.Set;
@@ -30,6 +34,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author <a href="http://tfox.org">Tim Fox</a>
  */
 public class LocalClient extends EventBusAppBase {
+
+  private static final Logger log = LoggerFactory.getLogger(LocalClient.class);
 
   @Override
   public void start() {
@@ -88,6 +94,73 @@ public class LocalClient extends EventBusAppBase {
         }
       });
     }
+  }
+
+  public void testBadHandler() {
+    Set<String> addresses = vertx.sharedData().getSet("addresses");
+    for (final String address: addresses) {
+      eb.send(address, "bad", new ReplyHandler<Message<String>>() {
+        public void handle(Message<String> reply) {
+          // Response will never arrive
+          tu.azzert(false);
+        }
+        public void fail(Failure fail) {
+          log.info("Expected failure "+fail.code+":"+fail.reason+"\n"+fail.trace);
+          tu.azzert(fail.code==Failure.INTERNAL_ERROR);
+          tu.azzert(fail.reason.indexOf("synthetic-error")>=0);
+          tu.testComplete();
+        }
+      });
+    }
+  }
+
+  public void testSlowHandler() {
+    Set<String> addresses = vertx.sharedData().getSet("addresses");
+    int idx=0;
+    for (final String address: addresses) {
+      // Alternate slow requests
+      if (idx++%2==0) {
+        // 2500ms with 2000ms timeout -> fail
+        eb.send(address, 2500, new ReplyHandler<Message<Integer>>(2000) {
+          public void handle(Message<Integer> reply) {
+            // Handler should never be called
+            tu.azzert(false);
+          }
+          public void fail(Failure fail) {
+            log.info("Expected failure "+fail);
+            tu.azzert(fail.code==Failure.REQUEST_TIMEOUT);
+            tu.testComplete();
+          }
+        });
+      }
+      else {
+        // 2000ms with 2500ms timeout -> pass
+        eb.send(address, 2000, new ReplyHandler<Message<Integer>>(2500) {
+          public void handle(Message<Integer> reply) {
+            tu.azzert(reply.body==2000);
+            tu.testComplete();
+          }
+          public void fail(Failure fail) {
+            // Handler should never be called
+            tu.azzert(false);
+          }
+        });
+      }
+    }
+  }
+  
+  public void testNoHandler() throws Exception {
+    eb.send("no-handler","bar",new ReplyHandler<Message<String>>() {
+      public void handle(Message<String> msg) {
+        // Handler will never be called
+        tu.azzert(false);
+      }
+      public void fail(Failure fail) {
+        log.info("Expected failure "+fail);
+        tu.azzert(fail.code==Failure.NOT_IMPLEMENTED);
+        tu.testComplete();
+      }
+    });
   }
 
   public void testLocal1() {

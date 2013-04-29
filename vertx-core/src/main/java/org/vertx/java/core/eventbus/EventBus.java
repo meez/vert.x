@@ -77,6 +77,15 @@ public interface EventBus {
    * Send a JSON object as a message
    * @param address The address to send it to
    * @param message The message
+   * @param replyHandler Reply handler will be called when any reply from the recipient is received
+   * @param timeout Timeout in MS
+   */
+  void send(String address, JsonObject message, Handler<Message<JsonObject>> replyHandler, int timeout);
+
+  /**
+   * Send a JSON object as a message
+   * @param address The address to send it to
+   * @param message The message
    */
   void send(String address, JsonObject message);
 
@@ -87,6 +96,15 @@ public interface EventBus {
    * @param replyHandler Reply handler will be called when any reply from the recipient is received
    */
   void send(String address, JsonArray message, Handler<Message<JsonArray>> replyHandler);
+
+  /**
+   * Send a JSON array as a message
+   * @param address The address to send it to
+   * @param message The message
+   * @param replyHandler Reply handler will be called when any reply from the recipient is received
+   * @param timeout Timeout in MS
+   */
+  void send(String address, JsonArray message, Handler<Message<JsonArray>> replyHandler, int timeout);
 
   /**
    * Send a JSON array as a message
@@ -107,6 +125,15 @@ public interface EventBus {
    * Send a Buffer as a message
    * @param address The address to send it to
    * @param message The message
+   * @param replyHandler Reply handler will be called when any reply from the recipient is received
+   * @param timeout Timeout in MS
+   */
+  void send(String address, Buffer message, Handler<Message<Buffer>> replyHandler, int timeout);
+
+  /**
+   * Send a Buffer as a message
+   * @param address The address to send it to
+   * @param message The message
    */
   void send(String address, Buffer message);
 
@@ -117,6 +144,15 @@ public interface EventBus {
    * @param replyHandler Reply handler will be called when any reply from the recipient is received
    */
   void send(String address, byte[] message, Handler<Message<byte[]>> replyHandler);
+
+  /**
+   * Send a byte[] as a message
+   * @param address The address to send it to
+   * @param message The message
+   * @param replyHandler Reply handler will be called when any reply from the recipient is received
+   * @param timeout Timeout in MS
+   */
+  void send(String address, byte[] message, Handler<Message<byte[]>> replyHandler, int timeout);
 
   /**
    * Send a byte[] as a message
@@ -137,6 +173,15 @@ public interface EventBus {
    * Send a String as a message
    * @param address The address to send it to
    * @param message The message
+   * @param replyHandler Reply handler will be called when any reply from the recipient is received
+   * @param timeout Timeout in MS
+   */
+  void send(String address, String message, Handler<Message<String>> replyHandler, int timeout);
+
+  /**
+   * Send a String as a message
+   * @param address The address to send it to
+   * @param message The message
    */
   void send(String address, String message);
 
@@ -147,6 +192,15 @@ public interface EventBus {
    * @param replyHandler Reply handler will be called when any reply from the recipient is received
    */
   void send(String address, Integer message, Handler<Message<Integer>> replyHandler);
+
+  /**
+   * Send an Integer as a message
+   * @param address The address to send it to
+   * @param message The message
+   * @param replyHandler Reply handler will be called when any reply from the recipient is received
+   * @param timeout Timeout in MS
+   */
+  void send(String address, Integer message, Handler<Message<Integer>> replyHandler, int timeout);
 
   /**
    * Send an Integer as a message
@@ -167,6 +221,15 @@ public interface EventBus {
    * Send a Long as a message
    * @param address The address to send it to
    * @param message The message
+   * @param replyHandler Reply handler will be called when any reply from the recipient is received
+   * @param timeout Timeout in MS
+   */
+  void send(String address, Long message, Handler<Message<Long>> replyHandler, int timeout);
+
+  /**
+   * Send a Long as a message
+   * @param address The address to send it to
+   * @param message The message
    */
   void send(String address, Long message);
 
@@ -177,6 +240,15 @@ public interface EventBus {
    * @param replyHandler Reply handler will be called when any reply from the recipient is received
    */
   void send(String address, Float message, Handler<Message<Float>> replyHandler);
+
+  /**
+   * Send a Float as a message
+   * @param address The address to send it to
+   * @param message The message
+   * @param replyHandler Reply handler will be called when any reply from the recipient is received
+   * @param timeout Timeout in MS
+   */
+  void send(String address, Float message, Handler<Message<Float>> replyHandler, int timeout);
 
   /**
    * Send a Float as a message
@@ -197,6 +269,15 @@ public interface EventBus {
    * Send a Double as a message
    * @param address The address to send it to
    * @param message The message
+   * @param replyHandler Reply handler will be called when any reply from the recipient is received
+   * @param timeout Timeout in MS
+   */
+  void send(String address, Double message, Handler<Message<Double>> replyHandler, int timeout);
+
+  /**
+   * Send a Double as a message
+   * @param address The address to send it to
+   * @param message The message
    */
   void send(String address, Double message);
 
@@ -207,6 +288,15 @@ public interface EventBus {
    * @param replyHandler Reply handler will be called when any reply from the recipient is received
    */
   void send(String address, Boolean message, Handler<Message<Boolean>> replyHandler) ;
+
+  /**
+   * Send a Boolean as a message
+   * @param address The address to send it to
+   * @param message The message
+   * @param replyHandler Reply handler will be called when any reply from the recipient is received
+   * @param timeout Timeout in MS
+   */
+  void send(String address, Boolean message, Handler<Message<Boolean>> replyHandler, int timeout) ;
 
   /**
    * Send a Boolean as a message
@@ -227,6 +317,15 @@ public interface EventBus {
    * Send a Short as a message
    * @param address The address to send it to
    * @param message The message
+   * @param replyHandler Reply handler will be called when any reply from the recipient is received
+   * @param timeout Timeout in MS
+   */
+  void send(String address, Short message, Handler<Message<Short>> replyHandler, int timeout);
+
+  /**
+   * Send a Short as a message
+   * @param address The address to send it to
+   * @param message The message
    */
   void send(String address, Short message);
 
@@ -242,6 +341,15 @@ public interface EventBus {
    * Send a Character as a message
    * @param address The address to send it to
    * @param message The message
+   * @param replyHandler Reply handler will be called when any reply from the recipient is received
+   * @param timeout Timeout in MS
+   */
+  void send(String address, Character message, Handler<Message<Character>> replyHandler, int timeout);
+
+  /**
+   * Send a Character as a message
+   * @param address The address to send it to
+   * @param message The message
    */
   void send(String address, Character message);
 
@@ -252,6 +360,15 @@ public interface EventBus {
    * @param replyHandler Reply handler will be called when any reply from the recipient is received
    */
   void send(String address, Byte message, Handler<Message<Byte>> replyHandler);
+
+  /**
+   * Send a Byte as a message
+   * @param address The address to send it to
+   * @param message The message
+   * @param replyHandler Reply handler will be called when any reply from the recipient is received
+   * @param timeout Timeout in MS
+   */
+  void send(String address, Byte message, Handler<Message<Byte>> replyHandler, int timeout);
 
   /**
    * Send a Byte as a message

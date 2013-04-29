@@ -107,12 +107,20 @@ public class DefaultEventBus implements EventBus {
     sendOrPub(new JsonObjectMessage(true, address, message), replyHandler);
   }
 
+  public void send(String address, JsonObject message, Handler<Message<JsonObject>> replyHandler, int timeout) {
+    sendOrPub(new JsonObjectMessage(true, address, message), replyHandler, timeout);
+  }
+
   public void send(String address, JsonObject message) {
     send(address, message, null);
   }
 
   public void send(String address, JsonArray message, final Handler<Message<JsonArray>> replyHandler) {
     sendOrPub(new JsonArrayMessage(true, address, message), replyHandler);
+  }
+
+  public void send(String address, JsonArray message, Handler<Message<JsonArray>> replyHandler, int timeout) {
+    sendOrPub(new JsonArrayMessage(true, address, message), replyHandler, timeout);
   }
 
   public void send(String address, JsonArray message) {
@@ -123,12 +131,20 @@ public class DefaultEventBus implements EventBus {
     sendOrPub(new BufferMessage(true, address, message), replyHandler);
   }
 
+  public void send(String address, Buffer message, Handler<Message<Buffer>> replyHandler, int timeout) {
+    sendOrPub(new BufferMessage(true, address, message), replyHandler, timeout);
+  }
+
   public void send(String address, Buffer message) {
     send(address, message, null);
   }
 
   public void send(String address, byte[] message, final Handler<Message<byte[]>> replyHandler) {
     sendOrPub(new ByteArrayMessage(true, address, message), replyHandler);
+  }
+
+  public void send(String address, byte[] message, Handler<Message<byte[]>> replyHandler, int timeout) {
+    sendOrPub(new ByteArrayMessage(true, address, message), replyHandler, timeout);
   }
 
   public void send(String address, byte[] message) {
@@ -139,12 +155,20 @@ public class DefaultEventBus implements EventBus {
     sendOrPub(new StringMessage(true, address, message), replyHandler);
   }
 
+  public void send(String address, String message, Handler<Message<String>> replyHandler, int timeout) {
+    sendOrPub(new StringMessage(true, address, message), replyHandler, timeout);
+  }
+
   public void send(String address, String message) {
     send(address, message, null);
   }
 
   public void send(String address, Integer message, final Handler<Message<Integer>> replyHandler) {
     sendOrPub(new IntMessage(true, address, message), replyHandler);
+  }
+
+  public void send(String address, Integer message, Handler<Message<Integer>> replyHandler, int timeout) {
+    sendOrPub(new IntMessage(true, address, message), replyHandler, timeout);
   }
 
   public void send(String address, Integer message) {
@@ -155,12 +179,20 @@ public class DefaultEventBus implements EventBus {
     sendOrPub(new LongMessage(true, address, message), replyHandler);
   }
 
+  public void send(String address, Long message, Handler<Message<Long>> replyHandler, int timeout) {
+    sendOrPub(new LongMessage(true, address, message), replyHandler, timeout);
+  }
+
   public void send(String address, Long message) {
     send(address, message, null);
   }
 
   public void send(String address, Float message, final Handler<Message<Float>> replyHandler) {
     sendOrPub(new FloatMessage(true, address, message), replyHandler);
+  }
+
+  public void send(String address, Float message, Handler<Message<Float>> replyHandler, int timeout) {
+    sendOrPub(new FloatMessage(true, address, message), replyHandler, timeout);
   }
 
   public void send(String address, Float message) {
@@ -171,12 +203,20 @@ public class DefaultEventBus implements EventBus {
     sendOrPub(new DoubleMessage(true, address, message), replyHandler);
   }
 
+  public void send(String address, Double message, Handler<Message<Double>> replyHandler, int timeout) {
+    sendOrPub(new DoubleMessage(true, address, message), replyHandler, timeout);
+  }
+
   public void send(String address, Double message) {
     send(address, message, null);
   }
 
   public void send(String address, Boolean message, final Handler<Message<Boolean>> replyHandler) {
     sendOrPub(new BooleanMessage(true, address, message), replyHandler);
+  }
+
+  public void send(String address, Boolean message, Handler<Message<Boolean>> replyHandler, int timeout) {
+    sendOrPub(new BooleanMessage(true, address, message), replyHandler, timeout);
   }
 
   public void send(String address, Boolean message) {
@@ -187,6 +227,10 @@ public class DefaultEventBus implements EventBus {
     sendOrPub(new ShortMessage(true, address, message), replyHandler);
   }
 
+  public void send(String address, Short message, Handler<Message<Short>> replyHandler, int timeout) {
+    sendOrPub(new ShortMessage(true, address, message), replyHandler, timeout);
+  }
+
   public void send(String address, Short message) {
     send(address, message, null);
   }
@@ -195,12 +239,20 @@ public class DefaultEventBus implements EventBus {
     sendOrPub(new CharacterMessage(true, address, message), replyHandler);
   }
 
+  public void send(String address, Character message, Handler<Message<Character>> replyHandler, int timeout) {
+    sendOrPub(new CharacterMessage(true, address, message), replyHandler, timeout);
+  }
+
   public void send(String address, Character message) {
     send(address, message, null);
   }
 
   public void send(String address, Byte message, final Handler<Message<Byte>> replyHandler) {
     sendOrPub(new ByteMessage(true, address, message), replyHandler);
+  }
+
+  public void send(String address, Byte message, Handler<Message<Byte>> replyHandler, int timeout) {
+    sendOrPub(new ByteMessage(true, address, message), replyHandler, timeout);
   }
 
   public void send(String address, Byte message) {
@@ -382,14 +434,7 @@ public class DefaultEventBus implements EventBus {
   }
 
   private void sendOrPub(final BaseMessage message, final Handler replyHandler) {
-    // Get the timeout via interface. This is kind of janky but it means we don't need to extend all the send<T> calls
-    // with timeout variants
-    Integer timeout=null;
-    if (replyHandler instanceof HandlerEx) {
-      HandlerEx he=(HandlerEx)replyHandler;
-      timeout=he.timeout();
-    }
-    sendOrPub(message, replyHandler, (timeout!=null)?timeout.intValue():this.defaultReplyTimeout);
+    sendOrPub(message, replyHandler,this.defaultReplyTimeout);
   }
 
   private void sendOrPub(final BaseMessage message, final Handler replyHandler, int timeout) {
@@ -640,8 +685,8 @@ public class DefaultEventBus implements EventBus {
         log.debug("Request timeout on "+address+", failing");
         
         try {
-          if (holder.handler instanceof HandlerEx) {
-            ((HandlerEx)holder.handler).fail(new Failure(Failure.REQUEST_TIMEOUT,"No response recieved"));
+          if (holder.handler instanceof ReplyHandler) {
+            ((ReplyHandler)holder.handler).fail(new Failure(Failure.REQUEST_TIMEOUT,"No response recieved"));
             return;
           }
         } catch (Throwable t) {
@@ -664,7 +709,7 @@ public class DefaultEventBus implements EventBus {
 	      // before it was received
 	      try {
 	        if (!holder.removed) {
-            // Failure messages are reported to HandlerEx or logged
+            // Failure messages are reported to ReplyHandler or logged
             if (copied instanceof FailureMessage) {
               doFailure(holder.handler,(FailureMessage)copied);
             } else {
@@ -686,14 +731,16 @@ public class DefaultEventBus implements EventBus {
   
   private void doFailure(Handler handler, FailureMessage fm) {
     try {
-      if (handler instanceof HandlerEx) {
-        ((HandlerEx)handler).fail(fm.body);
+      if (handler instanceof ReplyHandler) {
+        ((ReplyHandler)handler).fail(fm.body);
         return;
       }
     } catch (Throwable t) {
       log.warn("Failure handler failed (e="+t+") Ignoring");
     }
     log.debug("Received "+fm+" to "+fm.address+" [ignoring]");
+    if (!fm.body.trace.isEmpty())
+      log.debug(fm.body.trace);
   }
 	
   private static class HandlerHolder {

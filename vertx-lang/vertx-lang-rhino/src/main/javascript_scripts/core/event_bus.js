@@ -42,8 +42,8 @@ if (!vertx.eventBus) {
     var jsonObjectClass = new org.vertx.java.core.json.JsonObject().getClass();
     var jsonArrayClass = new org.vertx.java.core.json.JsonArray().getClass();
 
-    function wrappedHandler(handler) {
-      return new org.vertx.java.core.Handler({
+    function wrappedHandler(handler,failHandler) {
+      return new org.vertx.java.core.ReplyHandler({
         handle: function(jMsg) {
           var body = jMsg.body;
 
@@ -71,6 +71,12 @@ if (!vertx.eventBus) {
               jMsg.reply(reply);
             }
           })
+        },
+        fail: function(jFailure) {
+          if (!failHandler) {
+            return;
+          }
+          failHandler(jFailure);
         }
       });
     }
@@ -138,15 +144,15 @@ if (!vertx.eventBus) {
     Message should be a JSON object
     It should have a property "address"
      */
-    that.send = function(address, message, replyHandler) {
-      sendOrPub(true, address, message, replyHandler);
+    that.send = function(address, message, replyHandler, failHandler, timeout) {
+      sendOrPub(true, address, message, replyHandler, failHandler, timeout);
     };
 
     that.publish = function(address, message) {
       sendOrPub(false, address, message);
     };
 
-    function sendOrPub(send, address, message, replyHandler) {
+    function sendOrPub(send, address, message, replyHandler, failHandler, timeout) {
       if (!address) {
         throw "address must be specified";
       }
@@ -156,11 +162,15 @@ if (!vertx.eventBus) {
       if (replyHandler && typeof replyHandler != "function") {
         throw "replyHandler must be a function";
       }
+      if (failHandler && typeof failHandler != "function") {
+        throw "failHandler must be a function";
+      }
       message = convertMessage(message);
+      timeout = timeout || 0;
       if (send) {
         if (replyHandler) {
-          var wrapped = wrappedHandler(replyHandler);
-          jEventBus.send(address, message, wrapped);
+          var wrapped = wrappedHandler(replyHandler, failHandler);
+          jEventBus.send(address, message, wrapped, timeout);
         } else {
           jEventBus.send(address, message);
         }

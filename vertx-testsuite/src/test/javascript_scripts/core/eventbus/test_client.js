@@ -140,6 +140,57 @@ function testReplyOfReplyOfReply() {
   });
 }
 
+function testNoHandler() {
+
+  eb.send(address, sent, 
+    function(reply) {
+      tu.azzert(false);
+    },
+    function(failure) {
+      tu.azzert(failure.code==501);
+      tu.testComplete();
+    }
+  );
+}
+
+function testBadHandler() {
+
+  eb.registerHandler(address, function MyHandler(msg, replier) {
+    var b=null;
+    b.triggerNPE();
+  });
+
+  eb.send(address, sent, 
+    function(reply) {
+      tu.azzert(false);
+    },
+    function(failure) {
+      tu.azzert(failure.code==500);
+      tu.testComplete();
+    }
+  );
+}
+
+function testSlowHandler() {
+
+  eb.registerHandler(address, function MyHandler(msg, replier) {
+    vertx.setTimer(2100,function() {
+      replier(reply);
+    })
+  });
+
+  eb.send(address, sent, 
+    function(reply) {
+      tu.azzert(false);
+    },
+    function(failure) {
+      tu.azzert(failure.code==408);
+      tu.testComplete();
+    },
+    2000
+  );
+}
+
 function testEmptyReply() {
 
   var handled = false;

@@ -17,6 +17,7 @@
 package core.eventbus
 
 import org.vertx.groovy.testframework.TestUtils
+import org.vertx.java.core.eventbus.Failure
 
 tu = new TestUtils(vertx)
 tu.checkContext()
@@ -140,6 +141,50 @@ def testReplyOfReplyOfReply() {
       tu.testComplete()
     })
   })
+}
+
+def testNoHandler() {
+  eb.send("no-handler", "test", 
+    { reply -> 
+      tu.azzert(false) 
+    },
+    { fail -> 
+      tu.azzert(fail.code==Failure.NOT_IMPLEMENTED)
+      tu.testComplete() 
+    })
+}
+
+def testBadHandler() {
+  eb.registerHandler(address, myHandler = { msg ->
+    tu.azzert("message" == msg.body)
+    throw new NullPointerException("synthetic-error");
+  })
+  eb.send(address, "message", 
+    { reply -> 
+      tu.azzert(false); 
+    },
+    { fail -> 
+      tu.azzert(fail.code==Failure.INTERNAL_ERROR) 
+      tu.azzert(fail.reason.indexOf("synthetic-error")>=0) 
+      tu.testComplete() 
+    })
+}
+
+def testSlowHandler() {
+  eb.registerHandler(address, myHandler = { msg ->
+    vertx.setTimer(2100, {
+      msg.reply("slow")
+    })
+  })
+  eb.send(address, "message", 
+    { reply -> 
+      tu.azzert(false); 
+    },
+    { fail -> 
+      tu.azzert(fail.code==Failure.REQUEST_TIMEOUT) 
+      tu.testComplete() 
+    },
+    2000)
 }
 
 def testEmptyReply() {

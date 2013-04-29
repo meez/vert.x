@@ -16,13 +16,14 @@
 
 package org.vertx.groovy.core.eventbus
 
+import org.vertx.java.core.eventbus.EventBus as JEventBus
+
+import java.util.concurrent.ConcurrentHashMap
 import org.vertx.groovy.core.buffer.Buffer
 import org.vertx.java.core.AsyncResultHandler
 import org.vertx.java.core.Handler
-import org.vertx.java.core.eventbus.EventBus as JEventBus
+import org.vertx.java.core.ReplyHandler
 import org.vertx.java.core.json.JsonObject
-
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * A distributed lightweight event bus which can encompass multiple vert.x instances.
@@ -75,14 +76,16 @@ class EventBus {
    * @param address The address to send it to
    * @param message The message
    * @param replyHandler Reply handler will be called when any reply from the recipient is received
+   * @param failHandler Fail handler will be called if a failure is detected
+   * @param timeout Timeout in MS
    */
-  void send(String address, message, Closure replyHandler = null) {
+  void send(String address, message, Closure replyHandler = null, Closure failHandler = null, int timeout = 0) {
     if (message != null) {
       message = convertMessage(message)
-      jEventBus.send(address, convertMessage(message), wrapHandler(replyHandler))
+      jEventBus.send(address, convertMessage(message), wrapHandler(replyHandler, failHandler), timeout)
     } else {
       // Just choose an overloaded method...
-      jEventBus.send(address, (String)null, wrapHandler(replyHandler))
+      jEventBus.send(address, (String)null, wrapHandler(replyHandler, failHandler))
     }
   }
 
@@ -177,10 +180,16 @@ class EventBus {
     message
   }
 
-  protected static wrapHandler(replyHandler) {
+  protected static wrapHandler(replyHandler, failHandler=null) {
     if (replyHandler != null) {
-      def wrapped = { replyHandler(new Message(it)) } as Handler
-      return wrapped
+      if (failHandler!=null) {
+        return [ 
+          handle: { replyHandler(new Message(it)) }, 
+          fail: { failHandler(it) } 
+        ] as ReplyHandler
+      } else {
+        return { replyHandler(new Message(it)) } as Handler
+      }
     } else {
       return null
     }

@@ -90,4 +90,15 @@ public class JavaScriptEventBusTest extends TestBase {
     startTest(getMethodName());
   }
 
+  public void testNoHandler() {
+    startTest(getMethodName());
+  }
+
+  public void testBadHandler() {
+    startTest(getMethodName());
+  }
+
+  public void testSlowHandler() {
+    startTest(getMethodName());
+  }
 }

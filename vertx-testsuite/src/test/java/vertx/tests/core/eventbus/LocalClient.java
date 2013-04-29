@@ -121,7 +121,7 @@ public class LocalClient extends EventBusAppBase {
       // Alternate slow requests
       if (idx++%2==0) {
         // 2500ms with 2000ms timeout -> fail
-        eb.send(address, 2500, new ReplyHandler<Message<Integer>>(2000) {
+        eb.send(address, 2500, new ReplyHandler<Message<Integer>>() {
           public void handle(Message<Integer> reply) {
             // Handler should never be called
             tu.azzert(false);
@@ -131,11 +131,11 @@ public class LocalClient extends EventBusAppBase {
             tu.azzert(fail.code==Failure.REQUEST_TIMEOUT);
             tu.testComplete();
           }
-        });
+        },2000);
       }
       else {
         // 2000ms with 2500ms timeout -> pass
-        eb.send(address, 2000, new ReplyHandler<Message<Integer>>(2500) {
+        eb.send(address, 2000, new ReplyHandler<Message<Integer>>() {
           public void handle(Message<Integer> reply) {
             tu.azzert(reply.body==2000);
             tu.testComplete();
@@ -144,7 +144,7 @@ public class LocalClient extends EventBusAppBase {
             // Handler should never be called
             tu.azzert(false);
           }
-        });
+        },2500);
       }
     }
   }

@@ -47,6 +47,8 @@ public class Failure {
 	
 	public Failure(int code, String reason)
 	{
+    assert(reason!=null);
+
 		this.code=code;
 		this.reason=reason;
 		this.trace="";
@@ -54,6 +56,9 @@ public class Failure {
 
 	public Failure(int code, String reason, String trace)
 	{
+    assert(reason!=null);
+    assert(trace!=null);
+    
 		this.code=code;
 		this.reason=reason;
 		this.trace=trace;
@@ -61,6 +66,8 @@ public class Failure {
 	
 	public Failure(int code, Throwable cause)
 	{
+    assert(cause!=null);
+
 		this.code=code;
 		this.reason=cause.toString();
     

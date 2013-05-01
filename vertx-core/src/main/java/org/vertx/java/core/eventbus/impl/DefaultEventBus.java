@@ -380,7 +380,7 @@ public class DefaultEventBus implements EventBus {
   }
 
   void respondFailure(final ServerID dest, final Message src, final Failure f) {
-	  sendOrPub(dest, new FailureMessage(true, src.replyAddress, f), null, 0);
+    sendOrPub(dest, new FailureMessage(true, src.replyAddress, f), null, 0);
   }
 
   private NetServer setServer() {
@@ -705,26 +705,26 @@ public class DefaultEventBus implements EventBus {
 
     holder.context.execute(new Runnable() {
       public void run() {
-	      // Need to check handler is still there - the handler might have been removed after the message were sent but
-	      // before it was received
-	      try {
-	        if (!holder.removed) {
+        // Need to check handler is still there - the handler might have been removed after the message were sent but
+        // before it was received
+        try {
+          if (!holder.removed) {
             // Failure messages are reported to ReplyHandler or logged
             if (copied instanceof FailureMessage) {
-              doFailure(holder.handler,(FailureMessage)copied);
+              doFailure(holder.handler, (FailureMessage) copied);
             } else {
-  	          holder.handler.handle(copied);
+              holder.handler.handle(copied);
             }
-	        }
-        } catch(Throwable t) {
+          }
+        } catch (Throwable t) {
           // If the message has a reply then try send a failure to the originator
-          if (copied.replyAddress!=null)
-            respondFailure(msg.sender,copied,new Failure(Failure.INTERNAL_ERROR,t));	   
+          if (copied.replyAddress != null)
+            respondFailure(msg.sender, copied, new Failure(Failure.INTERNAL_ERROR, t));
         } finally {
-	        if (holder.replyHandler) {
-	          unregisterHandler(msg.address, holder.handler);
-	        }
-	      }
+          if (holder.replyHandler) {
+            unregisterHandler(msg.address, holder.handler);
+          }
+        }
       }
     });
   }

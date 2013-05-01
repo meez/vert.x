@@ -25,61 +25,57 @@ import java.io.StringWriter;
  */
 public class Failure {
 
-  public final static int UNKNOWN=0;
+  public final static int UNKNOWN = 0;
   // Request 
-  public final static int BAD_SYNTAX=400;  
-  public final static int FORBIDDEN=403;  
-  public final static int NOT_FOUND=404;  
-  public final static int REQUEST_TIMEOUT=408;  
-  public final static int PRECONDITION_FAILED=412;  
-  public final static int CALM_DOWN=420;  
+  public final static int BAD_SYNTAX = 400;
+  public final static int FORBIDDEN = 403;
+  public final static int NOT_FOUND = 404;
+  public final static int REQUEST_TIMEOUT = 408;
+  public final static int PRECONDITION_FAILED = 412;
+  public final static int CALM_DOWN = 420;
   // Server
-  public final static int INTERNAL_ERROR=500;
-  public final static int NOT_IMPLEMENTED=501;
-  public final static int SERVICE_UNAVAILABLE=503;
-  public final static int GATEWAY_TIMEOUT=504;
-	
-	public final int code;
-	
-	public final String reason;
-	
-	public final String trace;
-	
-	public Failure(int code, String reason)
-	{
-    assert(reason!=null);
+  public final static int INTERNAL_ERROR = 500;
+  public final static int NOT_IMPLEMENTED = 501;
+  public final static int SERVICE_UNAVAILABLE = 503;
+  public final static int GATEWAY_TIMEOUT = 504;
 
-		this.code=code;
-		this.reason=reason;
-		this.trace="";
-	}
+  public final int code;
 
-	public Failure(int code, String reason, String trace)
-	{
-    assert(reason!=null);
-    assert(trace!=null);
-    
-		this.code=code;
-		this.reason=reason;
-		this.trace=trace;
-	}
-	
-	public Failure(int code, Throwable cause)
-	{
-    assert(cause!=null);
+  public final String reason;
 
-		this.code=code;
-		this.reason=cause.toString();
-    
-    StringWriter sw=new StringWriter();
-    PrintWriter pw=new PrintWriter(sw);
+  public final String trace;
+
+  public Failure(int code, String reason) {
+    assert (reason != null);
+
+    this.code = code;
+    this.reason = reason;
+    this.trace = "";
+  }
+
+  public Failure(int code, String reason, String trace) {
+    assert (reason != null);
+    assert (trace != null);
+
+    this.code = code;
+    this.reason = reason;
+    this.trace = trace;
+  }
+
+  public Failure(int code, Throwable cause) {
+    assert (cause != null);
+
+    this.code = code;
+    this.reason = cause.toString();
+
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
     cause.printStackTrace(pw);
-    
-		this.trace=sw.toString();
-	}
 
-	public String toString()
-	{
-		return String.format("ERROR[%d]",code);
-	}
+    this.trace = sw.toString();
+  }
+
+  public String toString() {
+    return String.format("ERROR[%d]", code);
+  }
 }

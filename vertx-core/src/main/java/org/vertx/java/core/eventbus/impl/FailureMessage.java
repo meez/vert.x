@@ -20,11 +20,11 @@ import org.vertx.java.core.buffer.Buffer;
 import org.vertx.java.core.eventbus.Failure;
 import org.vertx.java.core.eventbus.Message;
 
-/** FailureMessage 
- *
- * Custom message type for transferring failures 
- * 
- **/
+/**
+ * FailureMessage
+ * <p/>
+ * Custom message type for transferring failures
+ */
 public class FailureMessage extends BaseMessage<Failure> {
 
   private byte[] encReason;
@@ -37,38 +37,38 @@ public class FailureMessage extends BaseMessage<Failure> {
   public FailureMessage(Buffer readBuff) {
     super(readBuff);
   }
-	
+
   public String toString() {
-	return String.format("Failure(%s:%s)",body.code,body.reason);
+    return String.format("Failure(%s:%s)", body.code, body.reason);
   }
 
   protected void readBody(int pos, Buffer readBuff) {
-    boolean isNull=readBuff.getByte(pos) == (byte)0;
+    boolean isNull = readBuff.getByte(pos) == (byte) 0;
     if (!isNull) {
       pos++;
       // Type
-      int code=readBuff.getInt(pos);
+      int code = readBuff.getInt(pos);
       pos += 4;
       // Reason 
-      int strLength=readBuff.getInt(pos);
+      int strLength = readBuff.getInt(pos);
       pos += 4;
-      String reason=readBuff.getString(pos,pos+strLength);
+      String reason = readBuff.getString(pos, pos + strLength);
       pos += strLength;
       // Trace
-      strLength=readBuff.getInt(pos);
+      strLength = readBuff.getInt(pos);
       pos += 4;
-      String trace=readBuff.getString(pos,pos+strLength);
+      String trace = readBuff.getString(pos, pos + strLength);
       pos += strLength;
       // Complete
-      body=new Failure(code,reason,trace);
+      body = new Failure(code, reason, trace);
     }
   }
 
   protected void writeBody(Buffer buff) {
     if (body == null) {
-      buff.appendByte((byte)0);
+      buff.appendByte((byte) 0);
     } else {
-      buff.appendByte((byte)1);
+      buff.appendByte((byte) 1);
       buff.appendInt(body.code);
       buff.appendInt(encReason.length);
       buff.appendBytes(encReason);
@@ -82,8 +82,8 @@ public class FailureMessage extends BaseMessage<Failure> {
     if (body == null) {
       return 1;
     } else {
-	    encReason=body.reason.getBytes(CharsetUtil.UTF_8);
-  	  encTrace=(body.trace!=null)?body.trace.getBytes(CharsetUtil.UTF_8):new byte[0];
+      encReason = body.reason.getBytes(CharsetUtil.UTF_8);
+      encTrace = (body.trace != null) ? body.trace.getBytes(CharsetUtil.UTF_8) : new byte[0];
       return 1 + 4 + (4 + encReason.length) + (4 + encTrace.length);
     }
   }
@@ -98,6 +98,6 @@ public class FailureMessage extends BaseMessage<Failure> {
   }
 
   protected BaseMessage createReplyMessage(Failure reply) {
-	  throw new UnsupportedOperationException("Cannot reply to a failure");
+    throw new UnsupportedOperationException("Cannot reply to a failure");
   }
 }

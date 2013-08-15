@@ -1,3 +1,21 @@
+## About this branch
+
+This is a branch of the VertX 1.3.1 release to provide additional EventBus extensions to aid responsiveness.
+
+The primary change is an extension to Handler for Java (or an additional closure for scripting langs)
+
+https://github.com/meez/vert.x/blob/meez-ebex/vertx-core/src/main/java/org/vertx/java/core/ReplyHandler.java
+
+which provides an additional channel for errors from the EventBus. Callers implementing ReplyHandler (or providing the 
+extra closure) will receive failure information if the remote Verticle is unable to process the message.
+
+* NOT_FOUND if there is no-one listening on that address
+* REQUEST_TIMEOUT if there was no response received in the specified timeout
+* INTERNAL_ERROR if there was exception thrown in the remote handler
+
+Verticles may also send their own custom failure codes (eg for flow-control, validation, authentication etc). For more
+information please see the source code or the examples in the unit-tests.
+
 ## What is vert.x?
 
 **Vert.x is the framework for the next generation of asynchronous, effortlessly scalable, concurrent applications.**
